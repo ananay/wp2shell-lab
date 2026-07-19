@@ -1,0 +1,14 @@
+{
+  "name": "wp2shell-lab/core-slice",
+  "description": "Minimal WordPress core slice reproducing the wp2shell (CVE-2026-63030 + CVE-2026-60137) REST-to-SQLi chain.",
+  "type": "project",
+  "license": "GPL-2.0-or-later",
+  "require": {
+    "php": ">=8.0"
+  },
+  "autoload": {
+    "classmap": [
+      "wp-includes/"
+    ]
+  }
+}
