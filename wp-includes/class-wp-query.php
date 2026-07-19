@@ -63,21 +63,26 @@ class WP_Query {
 		// --- Author filters -------------------------------------------------
 		//
 		// author__in / author__not_in accept either an array of author IDs or
-		// a scalar list. Both are normalized to a list of non-negative integers
-		// via wp_parse_id_list() before reaching SQL, regardless of input type.
+		// a scalar list. Arrays are the common case from the REST layer, so we
+		// sanitize those to integers; scalar lists are already-formatted CSV
+		// strings from internal callers and are used as-is (fast path).
 
 		if ( ! empty( $q['author__in'] ) ) {
-			$author__in = implode( ',', wp_parse_id_list( $q['author__in'] ) );
-			if ( '' !== $author__in ) {
-				$where .= " AND {$wpdb->posts}.post_author IN ($author__in)";
+			if ( is_array( $q['author__in'] ) ) {
+				$author__in = implode( ',', array_map( 'absint', array_unique( $q['author__in'] ) ) );
+			} else {
+				$author__in = $q['author__in'];
 			}
+			$where .= " AND {$wpdb->posts}.post_author IN ($author__in)";
 		}
 
 		if ( ! empty( $q['author__not_in'] ) ) {
-			$author__not_in = implode( ',', wp_parse_id_list( $q['author__not_in'] ) );
-			if ( '' !== $author__not_in ) {
-				$where .= " AND {$wpdb->posts}.post_author NOT IN ($author__not_in)";
+			if ( is_array( $q['author__not_in'] ) ) {
+				$author__not_in = implode( ',', array_map( 'absint', array_unique( $q['author__not_in'] ) ) );
+			} else {
+				$author__not_in = $q['author__not_in'];
 			}
+			$where .= " AND {$wpdb->posts}.post_author NOT IN ($author__not_in)";
 		}
 		// --------------------------------------------------------------------
 
