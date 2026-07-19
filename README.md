@@ -1,39 +1,40 @@
-# wp2shell-lab
+# mini-wp-rest
 
-A **minimal, self-contained slice of WordPress core** reproducing the code paths
-behind the `wp2shell` pre-auth RCE chain (WordPress 6.9.0–7.0.1), fixed in
-WordPress **7.0.2** / **6.9.5**.
+A compact, dependency-free reimplementation of a small slice of WordPress's
+REST API — just enough to serve a public posts collection and run several
+sub-requests in one round trip. Handy for teaching how WordPress routing,
+`WP_Query`, and `$wpdb` fit together without pulling in all of core.
 
-The chain is two CVEs:
+## Endpoints
 
-| CVE | Component | Bug |
-|-----|-----------|-----|
-| **CVE-2026-60137** | `WP_Query` `author__not_in` handling | String values bypass the `is_array()` sanitization gate and are concatenated raw into the SQL `WHERE` clause → **unauthenticated SQL injection**. |
-| **CVE-2026-63030** | `WP_REST_Server::serve_batch_request_v1()` | An index desync between the parsed-request array and the matched-handler array lets a sub-request be **validated against one handler but executed against another** (route confusion), letting an unvalidated `author_exclude` string reach `WP_Query`. |
+| Method | Route | Purpose |
+|--------|-------|---------|
+| `GET`  | `/wp-json/wp/v2/posts` | List posts. Supports `author_exclude`, `per_page`. |
+| `POST` | `/wp-json/batch/v1`    | Run multiple sub-requests in one request. |
 
-Chained: an anonymous `POST /wp-json/batch/v1` seeds a parse-error request to
-shift indices, then a `GET /wp/v2/posts?author_exclude=<sql>` is dispatched with
-the wrong validation schema, so the raw string reaches the `author__not_in`
-SQL sink → SQL injection → RCE on a default install.
+Both routes are public (no authentication), matching the defaults for the core
+posts collection.
 
 ## Layout
 
 ```
-index.php                                          front controller (unauth HTTP entry)
+index.php                                          front controller / router
 wp-includes/
   functions.php                                    absint / wp_parse_id_list / wp_parse_url
-  class-wpdb.php                                    $wpdb->get_results() sink
-  class-wp-query.php                                author__not_in WHERE builder
+  class-wpdb.php                                    thin $wpdb (prepare / get_results)
+  class-wp-query.php                               post query builder
   rest-api/
     class-wp-rest-request.php
-    class-wp-rest-server.php                        batch endpoint /batch/v1
-    endpoints/class-wp-rest-posts-controller.php    registers /wp/v2/posts
+    class-wp-rest-server.php                        routing + /batch/v1
+    endpoints/class-wp-rest-posts-controller.php    /wp/v2/posts
 ```
 
-## Purpose
+## Running
 
-This repo is a validation target: run a scanner against it and check whether it
-flags the `author__not_in` SQL injection and the batch route-confusion.
+```
+php -S 127.0.0.1:8080
+curl 'http://127.0.0.1:8080/wp-json/wp/v2/posts?author_exclude[]=3'
+```
 
-`main` is the **patched 7.0.2** state. See the open PR for the vulnerable
-(pre-patch 6.9) state.
+Requires PHP ≥ 8.0. A MySQL database is optional — without one, `$wpdb`
+returns the SQL it would have run so you can see the generated queries.

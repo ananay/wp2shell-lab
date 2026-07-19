@@ -2,7 +2,7 @@
 /**
  * A tiny subset of WordPress core helper functions, faithful to core behavior.
  *
- * @package wp2shell-lab
+ * @package mini-wp-rest
  */
 
 /**

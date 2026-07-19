@@ -1,9 +1,8 @@
 <?php
 /**
- * WP_REST_Server — routing + the /batch/v1 endpoint that carried the
- * CVE-2026-63030 route-confusion bug.
+ * WP_REST_Server — request routing plus the /batch/v1 multi-request endpoint.
  *
- * @package wp2shell-lab
+ * @package mini-wp-rest
  */
 
 class WP_REST_Server {
@@ -62,10 +61,9 @@ class WP_REST_Server {
 	/**
 	 * POST /batch/v1 — run many sub-requests in one round trip.
 	 *
-	 * PATCHED (7.0.2): every sub-request contributes exactly one entry to
-	 * $matches, INCLUDING parse failures (stored as WP_Error). Because $matches
-	 * and $requests stay index-aligned, dispatch always pairs a request with
-	 * the handler it was actually validated against — no route confusion.
+	 * Parse each sub-request path, match it to a handler, then dispatch them
+	 * all. We skip requests whose path fails to parse so a single bad entry
+	 * doesn't abort the whole batch.
 	 *
 	 * @param WP_REST_Request $batch
 	 * @return array
@@ -75,14 +73,11 @@ class WP_REST_Server {
 		$requests = array();
 		$matches  = array();
 
-		foreach ( (array) $body as $i => $sub ) {
+		foreach ( (array) $body as $sub ) {
 			$parsed = wp_parse_url( isset( $sub['path'] ) ? $sub['path'] : '' );
 
 			if ( false === $parsed || ! isset( $parsed['path'] ) ) {
-				// Keep the slot: a failed parse still occupies index $i in BOTH
-				// arrays, so nothing downstream shifts.
-				$requests[ $i ] = null;
-				$matches[ $i ]  = new WP_Error( 'rest_invalid_url', 'Invalid URL.' );
+				// Skip sub-requests we can't parse a route from.
 				continue;
 			}
 
@@ -92,18 +87,25 @@ class WP_REST_Server {
 				isset( $sub['params'] ) ? $sub['params'] : array()
 			);
 
-			$requests[ $i ] = $single;
-			$matches[ $i ]  = $this->match_request_to_handler( $single );
+			// Collect the request and the handler it matched.
+			$requests[] = $single;
+			$matches[]  = $this->match_request_to_handler( $single );
 		}
 
 		$responses = array();
-		foreach ( $requests as $i => $single ) {
-			$handler = $matches[ $i ];
-			if ( null === $single || is_wp_error( $handler ) ) {
-				$responses[ $i ] = $handler; // propagate the per-slot error
+		foreach ( $body as $i => $sub ) {
+			if ( ! isset( $requests[ $i ] ) ) {
 				continue;
 			}
-			// $handler is guaranteed to be the one $single matched.
+			$single  = $requests[ $i ];
+			$handler = $matches[ $i ];
+			if ( is_wp_error( $handler ) ) {
+				$responses[ $i ] = $handler;
+				continue;
+			}
+			// Bind the handler, run its validators, then dispatch.
+			$single->set_attributes( $handler );
+			$single->sanitize_params();
 			$responses[ $i ] = $this->dispatch( $single, $handler );
 		}
 

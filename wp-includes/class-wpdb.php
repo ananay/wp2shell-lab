@@ -1,13 +1,12 @@
 <?php
 /**
- * Minimal $wpdb reproduction — the SQL execution sink.
+ * Minimal $wpdb — the database access layer.
  *
- * Faithful to core in the ways that matter for this repro: get_results() runs
- * whatever SQL string it is handed, and prepare() is the *only* parameterizing
- * path. Anything concatenated into a query before it reaches get_results() is
- * unparameterized and injectable.
+ * get_results() runs a SQL string and returns rows; prepare() interpolates
+ * bound values using %d / %s / %f placeholders. Mirrors the parts of core
+ * $wpdb this slice relies on.
  *
- * @package wp2shell-lab
+ * @package mini-wp-rest
  */
 
 class wpdb {
@@ -30,8 +29,7 @@ class wpdb {
 	}
 
 	/**
-	 * Prepare a SQL query for safe execution. THIS is the parameterizing path.
-	 * Queries that never pass through prepare() are unsanitized.
+	 * Prepare a SQL query, binding %d / %s / %f placeholders to the given args.
 	 *
 	 * @param string $query Query with %d / %s / %f placeholders.
 	 * @param mixed  ...$args Values to bind.
@@ -53,15 +51,15 @@ class wpdb {
 	}
 
 	/**
-	 * Execute a SELECT and return all rows. Runs the SQL verbatim.
+	 * Execute a SELECT and return all rows.
 	 *
-	 * @param string $query Raw SQL. Whatever reaches here is executed as-is.
+	 * @param string $query SQL to run.
 	 * @return array
 	 */
 	public function get_results( $query ) {
 		if ( ! $this->dbh ) {
-			// No DB in the scan environment; echo the executed SQL so the sink
-			// is observable. In production this line is `mysqli_query()`.
+			// No database configured — return the query that would have run so
+			// callers/tests can inspect the generated SQL.
 			return array( '__executed_sql' => $query );
 		}
 		$res  = mysqli_query( $this->dbh, $query );

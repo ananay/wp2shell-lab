@@ -2,7 +2,7 @@
 /**
  * Minimal WP_REST_Request — carries method, route and params through dispatch.
  *
- * @package wp2shell-lab
+ * @package mini-wp-rest
  */
 
 class WP_REST_Request {
@@ -43,8 +43,8 @@ class WP_REST_Request {
 
 	/**
 	 * Run the registered argument validators/sanitizers for this request's
-	 * matched handler. The set of args comes from whichever handler was bound
-	 * in set_attributes() — which is exactly what the batch bug desyncs.
+	 * matched handler. The arg set comes from whichever handler was bound via
+	 * set_attributes().
 	 *
 	 * @return true|WP_Error
 	 */

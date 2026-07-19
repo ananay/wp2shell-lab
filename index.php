@@ -11,7 +11,7 @@
  *   GET  /wp-json/wp/v2/posts?author_exclude[]=3
  *   POST /wp-json/batch/v1   {"requests":[...]}
  *
- * @package wp2shell-lab
+ * @package mini-wp-rest
  */
 
 require __DIR__ . '/wp-includes/functions.php';

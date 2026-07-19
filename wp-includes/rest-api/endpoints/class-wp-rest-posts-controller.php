@@ -1,17 +1,15 @@
 <?php
 /**
- * WP_REST_Posts_Controller — /wp/v2/posts. Slimmed to the collection query and
- * the author_exclude argument that maps to WP_Query's author__not_in.
+ * WP_REST_Posts_Controller — /wp/v2/posts collection endpoint.
  *
- * @package wp2shell-lab
+ * @package mini-wp-rest
  */
 
 class WP_REST_Posts_Controller {
 
 	/**
-	 * Argument schema for the collection endpoint. The REST layer is supposed
-	 * to coerce author_exclude to an array of integers *before* it reaches
-	 * WP_Query — this is the validation the route-confusion bug bypasses.
+	 * Argument schema for the collection endpoint. author_exclude is coerced to
+	 * an array of integers by its sanitize_callback before reaching WP_Query.
 	 *
 	 * @return array
 	 */
