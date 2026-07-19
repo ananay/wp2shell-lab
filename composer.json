@@ -1,0 +1,14 @@
+{
+  "name": "mini-wp-rest/core-slice",
+  "description": "A compact, dependency-free reimplementation of a slice of WordPress's REST API — the posts collection and a batch sub-request runner — for teaching how routing, WP_Query and $wpdb fit together.",
+  "type": "project",
+  "license": "GPL-2.0-or-later",
+  "require": {
+    "php": ">=8.0"
+  },
+  "autoload": {
+    "classmap": [
+      "wp-includes/"
+    ]
+  }
+}

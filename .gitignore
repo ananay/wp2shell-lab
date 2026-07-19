@@ -1,0 +1,6 @@
+vendor/
+*.log
+.DS_Store
+
+# local scratch test (not part of the app)
+.harness_test.php
