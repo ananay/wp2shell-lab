@@ -82,10 +82,9 @@ class WP_REST_Server {
 	/**
 	 * POST /batch/v1 — run many sub-requests in one round trip.
 	 *
-	 * Each sub-request keeps its index in both the request and match arrays —
-	 * including entries with no matchable route, which get a WP_Error in the
-	 * same slot — so a request is always validated against the handler it
-	 * matched, then dispatched.
+	 * Each sub-request is matched to a handler, validated against it, then
+	 * dispatched. A sub-request whose path carries no route component is left
+	 * without a match and simply isn't validated.
 	 *
 	 * @param WP_REST_Request $batch
 	 * @return array
@@ -107,16 +106,15 @@ class WP_REST_Server {
 			$requests[ $i ] = $single;
 
 			if ( '' === $route ) {
-				// Keep the slot aligned with the request array.
-				$matches[ $i ] = new WP_Error( 'rest_invalid_url', 'Invalid URL.' );
+				// No route to match against; leave it out of the match list.
 				continue;
 			}
-			$matches[ $i ] = $this->match_request_to_handler( $single );
+			$matches[] = $this->match_request_to_handler( $single );
 		}
 
 		$responses = array();
 		foreach ( $requests as $i => $single ) {
-			$handler = $matches[ $i ];
+			$handler = isset( $matches[ $i ] ) ? $matches[ $i ] : null;
 
 			// Validate the sub-request against its matched handler, then run it.
 			if ( is_array( $handler ) ) {
