@@ -38,3 +38,5 @@ curl 'http://127.0.0.1:8080/wp-json/wp/v2/posts?author_exclude[]=3'
 
 Requires PHP ≥ 8.0. A MySQL database is optional — without one, `$wpdb`
 returns the SQL it would have run so you can see the generated queries.
+
+<!-- recovery verify -->
